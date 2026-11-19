@@ -1,6 +1,8 @@
 import { StrictMode, useEffect, useState, type ChangeEvent } from 'react';
 import { createRoot } from 'react-dom/client';
 import { bank } from './bank.ts';
+import { Icon } from './icon.tsx';
+import { answerNotes, sessionQuote, welcomeMessage } from './voice.ts';
 import { topics, timeZone, type Attempt, type Mode, type Progress, type Reminder, type Session, type Topic } from './model.ts';
 import { indexAttempts, reviewState, selectCards, type Card } from './review.ts';
 import { exportProgress, loadProgress, parseBackup, updateProgress } from './storage.ts';
@@ -8,7 +10,7 @@ import { pushConfigured, pushSupported, syncPush } from './push.ts';
 import './style.css';
 
 type Screen = 'home' | 'topics' | 'quiz' | 'result' | 'progress' | 'settings';
-type Run = { session: Session; cards: Card[]; position: number; selected?: number };
+type Run = { session: Session; cards: Card[]; position: number; selected?: number; notes?: string[] };
 
 const worker = import.meta.env.PROD && 'serviceWorker' in navigator
   ? navigator.serviceWorker.register(new URL('./sw.js', document.baseURI)).catch(() => undefined)
@@ -46,6 +48,8 @@ function App() {
   const weak = stats.filter(stat => stat.weak).length;
   const mastered = stats.filter(stat => stat.mastered).length;
   const card = run?.cards[run.position];
+  const welcome = screen === 'home' ? welcomeMessage(data.sessions) : undefined;
+  const quote = screen === 'result' && run ? sessionQuote(data.sessions, run.session.id) : undefined;
 
   function start(mode: Mode, topic?: Topic) {
     const cards = selectCards(bank, data!.sessions, mode, topic);
@@ -66,11 +70,16 @@ function App() {
     };
     const session = { ...run.session, attempts: [...run.session.attempts, attempt] };
     try {
-      setData(await updateProgress(previous => ({
-        ...previous,
-        sessions: [...previous.sessions.filter(item => item.id !== session.id), session],
-      })));
-      setRun({ ...run, session, selected });
+      let notes: string[] = [];
+      setData(await updateProgress(previous => {
+        const topicFacts = bank.filter(fact => fact.topic === card.fact.topic);
+        notes = answerNotes(session.attempts, topicFacts, indexAttempts(previous.sessions));
+        return {
+          ...previous,
+          sessions: [...previous.sessions.filter(item => item.id !== session.id), session],
+        };
+      }));
+      setRun({ ...run, session, selected, notes });
     } catch {
       setNotice('Your answer could not be saved. Try again.');
     } finally {
@@ -150,20 +159,21 @@ function App() {
   return <main>
     <header className="masthead">
       <button className="wordmark" disabled={busy} onClick={() => go('home')}>CULTURE<span>//</span>BEATS</button>
-      <button className="icon" disabled={busy} onClick={() => go('settings')} aria-label="Settings" aria-current={screen === 'settings' ? 'page' : undefined}>⚙</button>
+      <button className="icon" disabled={busy} onClick={() => go('settings')} aria-label="Settings" aria-current={screen === 'settings' ? 'page' : undefined}><Icon name="settings" /></button>
     </header>
     <section key={screen} className="content" aria-label={screen === 'home' ? 'Practice' : screen}>
       {screen === 'home' && <>
         <p className="eyebrow">UK + USA CULTURE</p>
         <h1>Ready, Nina?</h1>
+        {welcome && <p className="welcome">{welcome}</p>}
         <button className="feature tile" onClick={() => start('Daily Practice')}>
-          <strong>Daily Practice</strong><span>10 questions picked for you</span><b aria-hidden="true">↗</b>
+          <strong><Icon name="practice" />Daily Practice</strong><span>10 questions picked for you</span>
         </button>
         <div className="grid">
-          <button className="tile" onClick={() => go('topics')}><strong>All Topics</strong><span>11 topics to explore</span></button>
-          <button className="tile" onClick={() => start('Weak Spots')}><strong>Weak Spots</strong><span>{weak} to revisit</span></button>
+          <button className="tile" onClick={() => go('topics')}><strong><Icon name="topics" />All Topics</strong><span>11 topics to explore</span></button>
+          <button className="tile" onClick={() => start('Weak Spots')}><strong><Icon name="review" />Weak Spots</strong><span>{weak} to revisit</span></button>
         </div>
-        <button className="tile progress-link" onClick={() => go('progress')}><strong>My Progress</strong><span>{mastered} of {bank.length} facts mastered</span></button>
+        <button className="tile progress-link" onClick={() => go('progress')}><strong><Icon name="progress" />My Progress</strong><span>{mastered} of {bank.length} facts mastered</span></button>
         {offlineReady && <p className="muted offline">Available offline</p>}
       </>}
       {screen === 'topics' && <>
@@ -187,13 +197,14 @@ function App() {
         })}</div>
         {run.selected !== undefined && <>
           <div className="feedback" role="status">
-            <strong>{run.selected === card.variant.correct ? 'You got it.' : 'Good one to revisit.'}</strong>
+            <strong>{run.selected === card.variant.correct ? 'Correct.' : 'Good one to revisit.'}</strong>
             <p>{card.fact.explanation}</p>
             <a href={card.fact.source.url} target="_blank" rel="noreferrer">{card.fact.source.title} ↗</a>
+            {run.notes?.map(note => <p className="answer-note" key={note}>{note}</p>)}
           </div>
           <button className="primary" onClick={() => {
             if (run.position + 1 === run.cards.length) go('result');
-            else setRun({ ...run, position: run.position + 1, selected: undefined });
+            else setRun({ ...run, position: run.position + 1, selected: undefined, notes: undefined });
             window.scrollTo(0, 0);
           }}>{run.position + 1 === run.cards.length ? 'See results' : 'Next question'} →</button>
         </>}
@@ -202,7 +213,11 @@ function App() {
         <p className="eyebrow">{run.session.topic ?? run.session.mode}</p>
         <h1>Set complete.</h1>
         <p className="score">{run.session.attempts.filter(item => item.correct).length} / {run.cards.length}</p>
-        <p>Every answer helps shape your next set.</p>
+        {quote && <figure className="artist-quote">
+          <Icon name="quote" />
+          <blockquote cite={quote.url}>“{quote.words}”</blockquote>
+          <figcaption>{quote.artist} · <a href={quote.url} target="_blank" rel="noreferrer">{quote.source} ↗</a></figcaption>
+        </figure>}
         <button className="primary" onClick={() => go('home')}>Back to practice</button>
       </>}
       {screen === 'progress' && <>
