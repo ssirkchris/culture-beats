@@ -26,15 +26,17 @@ Użyj adresu z terminala. Tryb `preview` serwuje produkcyjną PWA z service work
 | II · rejonowy | Geography, Literature, Science, Current Affairs | B2, w tym różnice British i American English |
 | III · wojewódzki | History, Cinema, Music, Holidays & Traditions | B2+, w tym różnice British i American English |
 
-Aplikacja ćwiczy część kulturową. Regulamin obejmuje również szkolną podstawę programową i środki językowe. Bank zawiera 14 faktów i 28 wariantów, reprezentujących wszystkie 11 działów. Każdy fakt ma kraj, trudność, objaśnienie i źródło, a każde pytanie własny identyfikator, cztery opcje i indeks poprawnej odpowiedzi. Aktualności mają datę wydarzenia. Trudność Foundation / Challenge opisuje pytania w aplikacji.
+Aplikacja ćwiczy część kulturową. Regulamin obejmuje również szkolną podstawę programową i środki językowe. Bank zawiera 95 faktów i 190 wariantów, reprezentujących wszystkie 11 działów. Na etap II przypada 86 faktów. Aktualności obejmują wydarzenia z 2026 r., zweryfikowane do 19 listopada 2026 r. Każdy fakt ma kraj, trudność, objaśnienie i źródło, a każde pytanie własny identyfikator, cztery opcje i indeks poprawnej odpowiedzi. Aktualności mają datę wydarzenia. Trudność Foundation / Challenge opisuje pytania w aplikacji.
+
+Materiały wykorzystane do określenia zakresu i doboru zagadnień to [pomorski katalog Odrabiamy](https://konkursy.odrabiamy.pl/pozycja/konkurs-kuratoryjny-jezyk-angielski/pomorskie), [strona komisji konkursowej 2026/27](https://17logdynia.pl/wojewodzki-konkurs-z-jezyka-angielskiego/) i [opublikowany arkusz rejonowy z 2025/26, zadanie 7](https://lo9.gdynia.pl/wp-content/uploads/2025/11/ARKUSZ-ZADAN-KONKURSOWYCH-ETAP-II-REJONOWY.pdf). Pytania są autorskie. Fakty zweryfikowano w źródłach podanych w objaśnieniach.
 
 ## Powtórki i dane
 
-Daily Practice wybiera 10 różnych faktów. Priorytet mają zaległe słabe fakty, pozostałe zaległe fakty, nowe fakty i na końcu fakty z przyszłym terminem, aby dopełnić zestaw. All Topics ogranicza wybór do wybranego działu. Weak Spots pozwala wrócić do błędów od razu. Kolejne próby obracają warianty faktu i tasują odpowiedzi.
+Daily Practice wybiera 10 różnych faktów. Priorytet mają zaległe słabe fakty, pozostałe zaległe fakty, nowe fakty i na końcu fakty z przyszłym terminem, aby dopełnić zestaw. Regional Practice dobiera 10 faktów z czterech działów etapu II, uwzględniając UK i USA w każdym dziale. All Topics grupuje działy według etapów i pozwala filtrować je według kraju. Weak Spots pozwala wrócić do błędów od razu. Kolejne próby obracają warianty faktu i tasują odpowiedzi.
 
 Po poprawnej odpowiedzi odstępy wynoszą kolejno 1, 3, 7, 14, 30 i 60 dni. Błąd zeruje serię i wyznacza termin za 10 minut. Dwie poprawne odpowiedzi odrabiają słaby punkt, a trzy z rzędu dają opanowanie. Terminy są liczone w czasie od ostatniej odpowiedzi.
 
-Odpowiedzi zapisują się na bieżąco, również przy przerwaniu sesji. W **Settings → Practice history** można wyeksportować JSON i scalić sesje z pliku po walidacji. Import pomija duplikaty i uzupełnia dłuższe wersje sesji. Preferencje przypomnień należą do urządzenia. Wersja formatu pliku to 1. Po publikacji na innej domenie przenieś historię eksportem i importem.
+Odpowiedzi zapisują się na bieżąco, również przy przerwaniu sesji. W **Settings → Practice history** można wyeksportować JSON i scalić sesje z pliku po walidacji. Import pomija duplikaty i uzupełnia dłuższe wersje sesji. Preferencje przypomnień należą do urządzenia. Imię podane w Settings → Profile zostaje lokalnie i nie trafia do eksportu. Wersja formatu pliku to 1. Po publikacji na innej domenie przenieś historię eksportem i importem.
 
 ## GitHub Pages
 

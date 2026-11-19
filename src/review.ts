@@ -1,4 +1,4 @@
-import type { Attempt, Fact, Mode, Session, Topic, Variant } from './model.ts';
+import { regionalTopics, type Attempt, type Fact, type Mode, type Session, type Topic, type Variant } from './model.ts';
 
 const day = 86_400_000;
 const intervals = [1, 3, 7, 14, 30, 60];
@@ -37,15 +37,28 @@ export type Card = { fact: Fact; variant: Variant; order: number[] };
 export function selectCards(bank: readonly Fact[], sessions: readonly Session[], mode: Mode,
     topic?: Topic, now = Date.now(), random = Math.random): Card[] {
   const index = indexAttempts(sessions);
-  return bank.filter(fact => mode !== 'All Topics' || fact.topic === topic).map(fact => {
+  const ranked = bank.filter(fact => {
+    if (mode === 'Regional Practice') return regionalTopics.includes(fact.topic);
+    return mode !== 'All Topics' || fact.topic === topic;
+  }).map(fact => {
     const history = index.get(fact.id) ?? [];
     const state = reviewState(history);
     const rank = !history.length ? 2 : state.due <= now ? (state.weak ? 0 : 1) : 3;
     return { fact, history, state, rank, tie: random() };
   }).filter(item => mode !== 'Weak Spots' || item.state.weak)
     .sort((a, b) => a.rank - b.rank || (a.rank === 2 ? 0 : a.state.due - b.state.due) || a.tie - b.tie)
-    .slice(0, 10)
-    .map(({ fact, history }) => {
+  const core = new Set<string>();
+  if (mode === 'Regional Practice') {
+    for (const regionalTopic of regionalTopics) {
+      for (const country of ['UK', 'USA']) {
+        const match = ranked.find(item => item.fact.topic === regionalTopic && item.fact.country === country);
+        if (match) core.add(match.fact.id);
+      }
+    }
+  }
+  const fill = ranked.filter(item => !core.has(item.fact.id)).slice(0, 10 - core.size);
+  const selected = new Set([...core, ...fill.map(item => item.fact.id)]);
+  return ranked.filter(item => selected.has(item.fact.id)).map(({ fact, history }) => {
       const last = fact.variants.findIndex(variant => variant.id === history.at(-1)?.variantId);
       const variant = fact.variants[(last + 1) % fact.variants.length];
       const order = [0, 1, 2, 3];

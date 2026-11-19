@@ -1,9 +1,9 @@
-import { StrictMode, useEffect, useState, type ChangeEvent } from 'react';
+import { StrictMode, useEffect, useState, type ChangeEvent, type FormEvent } from 'react';
 import { createRoot } from 'react-dom/client';
 import { bank } from './bank.ts';
 import { Icon } from './icon.tsx';
-import { answerNotes, sessionQuote, welcomeMessage } from './voice.ts';
-import { topics, timeZone, type Attempt, type Mode, type Progress, type Reminder, type Session, type Topic } from './model.ts';
+import { answerNotes, resultMessage, sessionQuote, welcomeMessage } from './voice.ts';
+import { regionalTopics, stages, topics, timeZone, type Attempt, type Country, type Mode, type Progress, type Reminder, type Session, type Topic } from './model.ts';
 import { indexAttempts, reviewState, selectCards, type Card } from './review.ts';
 import { exportProgress, loadProgress, parseBackup, updateProgress } from './storage.ts';
 import { pushConfigured, pushSupported, syncPush } from './push.ts';
@@ -24,6 +24,7 @@ function App() {
   const [notice, setNotice] = useState('');
   const [offlineReady, setOfflineReady] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [topicCountry, setTopicCountry] = useState<Country | 'Both'>('Both');
   const [imported, setImported] = useState<Progress>();
 
   useEffect(() => {
@@ -49,15 +50,18 @@ function App() {
   const mastered = stats.filter(stat => stat.mastered).length;
   const card = run?.cards[run.position];
   const welcome = screen === 'home' ? welcomeMessage(data.sessions) : undefined;
+  const topicBank = topicCountry === 'Both' ? bank : bank.filter(fact => fact.country === topicCountry);
+  const regionalCount = bank.filter(fact => regionalTopics.includes(fact.topic)).length;
   const quote = screen === 'result' && run ? sessionQuote(data.sessions, run.session.id) : undefined;
 
   function start(mode: Mode, topic?: Topic) {
-    const cards = selectCards(bank, data!.sessions, mode, topic);
+    const country = mode === 'All Topics' && topicCountry !== 'Both' ? topicCountry : undefined;
+    const cards = selectCards(mode === 'All Topics' ? topicBank : bank, data!.sessions, mode, topic);
     if (!cards.length) {
       setNotice('No weak spots yet. A missed answer will show up here.');
       return;
     }
-    setRun({ cards, position: 0, session: { id: crypto.randomUUID(), mode, topic, attempts: [] } });
+    setRun({ cards, position: 0, session: { id: crypto.randomUUID(), mode, topic, country, attempts: [] } });
     go('quiz');
   }
 
@@ -82,6 +86,20 @@ function App() {
       setRun({ ...run, session, selected, notes });
     } catch {
       setNotice('Your answer could not be saved. Try again.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function saveName(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const displayName = String(new FormData(event.currentTarget).get('displayName') ?? '').trim();
+    setBusy(true);
+    try {
+      setData(await updateProgress(previous => ({ ...previous, displayName: displayName || undefined })));
+      setNotice('Name saved on this device.');
+    } catch {
+      setNotice('Could not save your name. Try again.');
     } finally {
       setBusy(false);
     }
@@ -164,13 +182,17 @@ function App() {
     <section key={screen} className="content" aria-label={screen === 'home' ? 'Practice' : screen}>
       {screen === 'home' && <>
         <p className="eyebrow">UK + USA CULTURE</p>
-        <h1>Ready, Nina?</h1>
+        <h1>{data.displayName ? `Ready, ${data.displayName}?` : 'Ready to practise?'}</h1>
         {welcome && <p className="welcome">{welcome}</p>}
         <button className="feature tile" onClick={() => start('Daily Practice')}>
           <strong><Icon name="practice" />Daily Practice</strong><span>10 questions picked for you</span>
         </button>
+        <button className="tile regional" onClick={() => start('Regional Practice')}>
+          <strong><Icon name="topics" />Regional Practice</strong>
+          <span>10 questions across Stage II · {regionalCount} facts</span>
+        </button>
         <div className="grid">
-          <button className="tile" onClick={() => go('topics')}><strong><Icon name="topics" />All Topics</strong><span>11 topics to explore</span></button>
+          <button className="tile" onClick={() => go('topics')}><strong><Icon name="topics" />All Topics</strong><span>{topics.length} topics · {bank.length} facts</span></button>
           <button className="tile" onClick={() => start('Weak Spots')}><strong><Icon name="review" />Weak Spots</strong><span>{weak} to revisit</span></button>
         </div>
         <button className="tile progress-link" onClick={() => go('progress')}><strong><Icon name="progress" />My Progress</strong><span>{mastered} of {bank.length} facts mastered</span></button>
@@ -178,10 +200,23 @@ function App() {
       </>}
       {screen === 'topics' && <>
         <h1>All Topics</h1>
-        <div className="topic-list">{topics.map(topic =>
-          <button className="tile row" key={topic} onClick={() => start('All Topics', topic)}>
-            <strong>{topic}</strong><span>{bank.filter(fact => fact.topic === topic).length} facts ↗</span>
-          </button>)}</div>
+        <label className="topic-filter">
+          Country
+          <select value={topicCountry} onChange={event => setTopicCountry(event.target.value as Country | 'Both')}>
+            <option value="Both">UK + USA</option>
+            <option value="UK">United Kingdom</option>
+            <option value="USA">United States</option>
+          </select>
+        </label>
+        {stages.map(stage => <section key={stage.title}>
+          <h2>{stage.title}</h2>
+          <div className="topic-list">{stage.topics.map(topic => {
+            const count = topicBank.filter(fact => fact.topic === topic).length;
+            return <button className="tile row" key={topic} disabled={!count} onClick={() => start('All Topics', topic)}>
+              <strong>{topic}</strong><span>{count} {count === 1 ? 'fact' : 'facts'}</span>
+            </button>;
+          })}</div>
+        </section>)}
       </>}
       {screen === 'quiz' && run && card && <>
         <p className="eyebrow">{run.session.topic ?? run.session.mode} · {run.position + 1} / {run.cards.length}</p>
@@ -213,10 +248,11 @@ function App() {
         <p className="eyebrow">{run.session.topic ?? run.session.mode}</p>
         <h1>Set complete.</h1>
         <p className="score">{run.session.attempts.filter(item => item.correct).length} / {run.cards.length}</p>
+        <p className="result-line">{resultMessage(run.session.attempts)}</p>
         {quote && <figure className="artist-quote">
           <Icon name="quote" />
-          <blockquote cite={quote.url}>“{quote.words}”</blockquote>
-          <figcaption>{quote.artist} · <a href={quote.url} target="_blank" rel="noreferrer">{quote.source} ↗</a></figcaption>
+          <blockquote>“{quote.words}”</blockquote>
+          <figcaption>{quote.artist} · {quote.source}</figcaption>
         </figure>}
         <button className="primary" onClick={() => go('home')}>Back to practice</button>
       </>}
@@ -232,11 +268,20 @@ function App() {
         <h2>Session history</h2>
         {!data.sessions.length && <p className="muted">Your first session will appear here.</p>}
         <ul>{[...data.sessions].sort((a, b) => b.attempts.at(-1)!.at - a.attempts.at(-1)!.at).map(session =>
-          <li className="row" key={session.id}><span>{session.topic ?? session.mode}<small>{sessionDate.format(session.attempts[0].at)}</small></span>
+          <li className="row" key={session.id}><span>{session.topic ?? session.mode}{session.country ? ` · ${session.country}` : ''}<small>{sessionDate.format(session.attempts[0].at)}</small></span>
             <strong>{session.attempts.filter(attempt => attempt.correct).length} / {session.attempts.length}</strong></li>)}</ul>
       </>}
       {screen === 'settings' && <>
         <h1>Settings</h1>
+        <h2>Profile</h2>
+        <form className="profile-form" onSubmit={event => void saveName(event)}>
+          <label htmlFor="display-name">What should we call you?</label>
+          <div>
+            <input id="display-name" name="displayName" defaultValue={data.displayName ?? ''}
+              maxLength={30} autoComplete="given-name" disabled={busy} />
+            <button className="secondary" disabled={busy}>Save name</button>
+          </div>
+        </form>
         <h2>Reminders</h2>
         <label className="row"><span>Daily reminder</span><input type="checkbox" checked={data.reminder.enabled} disabled={busy} onChange={event => void saveReminder({ ...data.reminder, enabled: event.target.checked })} /></label>
         <label className="row"><span>Reminder time</span><input type="time" required value={data.reminder.time} disabled={busy} onChange={event => { if (event.target.value) void saveReminder({ ...data.reminder, time: event.target.value }); }} /></label>

@@ -56,6 +56,8 @@ export function parseBackup(json: string): Progress {
     if (!record(session) || !identifier(session.id) || ids.has(session.id) ||
         !modes.some(mode => mode === session.mode) ||
         (session.mode === 'All Topics' ? !topics.some(topic => topic === session.topic) : session.topic !== undefined) ||
+        (session.country !== undefined && (session.mode !== 'All Topics' ||
+          (session.country !== 'UK' && session.country !== 'USA'))) ||
         !Array.isArray(session.attempts) || session.attempts.length < 1 || session.attempts.length > 10) {
       throw new Error('Invalid session');
     }
@@ -73,7 +75,8 @@ export function parseBackup(json: string): Progress {
 }
 
 export function exportProgress(data: Progress) {
-  const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }));
+  const backup = { version: data.version, sessions: data.sessions, reminder: data.reminder };
+  const url = URL.createObjectURL(new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' }));
   const link = document.createElement('a');
   link.href = url;
   link.download = 'culture-beats-progress.json';

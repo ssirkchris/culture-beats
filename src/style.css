@@ -14,7 +14,7 @@
 * { box-sizing: border-box; }
 body { margin: 0; min-width: 300px; }
 main { max-width: 42rem; min-height: 100dvh; margin: auto; padding: env(safe-area-inset-top) 1.25rem env(safe-area-inset-bottom); display: flex; flex-direction: column; }
-button, input { font: inherit; }
+button, input, select { font: inherit; }
 button, input[type="file"], .upload { cursor: pointer; }
 button { color: inherit; }
 button:disabled { cursor: default; }
@@ -75,3 +75,14 @@ input[type="time"] { max-width: 8rem; min-height: 44px; }
 nav { border-width: 1px 0 0; gap: .5rem; }
 nav button { flex: 1; min-height: 3.5rem; color: var(--muted); }
 nav button[aria-current] { color: var(--mustard); font-weight: 700; }
+
+.regional { margin-bottom: .7rem; border-color: #637b8a; }
+.result-line { color: var(--olive); line-height: 1.45; }
+.profile-form { display: grid; gap: .55rem; }
+.profile-form > div { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .55rem; }
+.profile-form input { min-width: 0; min-height: 48px; padding: .6rem .75rem; border: 1px solid var(--border); border-radius: .65rem; background: var(--surface); color: inherit; }
+h1 { overflow-wrap: anywhere; }
+
+.topic-filter { display: flex; gap: .75rem; align-items: center; justify-content: space-between; }
+.topic-filter select { min-height: 44px; padding: .4rem .55rem; border: 1px solid var(--border); border-radius: .5rem; background: var(--surface); color: inherit; }
+.tile:disabled { opacity: .58; }

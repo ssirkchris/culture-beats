@@ -30,6 +30,10 @@ export function answerNotes(attempts: readonly Attempt[], topicFacts: readonly F
     notes.push("Five in a row. You're locked in.");
   }
 
+  if (attempts.length >= 3 && attempts.slice(-3).every(attempt => attempt.correct) && !attempts.at(-4)?.correct) {
+    notes.push('Three clean hits. Keep the rhythm.');
+  }
+
   // With a correct answer, a fact can become mastered only on its third hit.
   if (reviewState(earlier).streak === 2 &&
       topicFacts.every(fact => fact.id === last.factId || reviewState(history.get(fact.id) ?? []).mastered)) {
@@ -43,22 +47,33 @@ const artistQuotes = [
     words: 'You’re not going to hit it every single time',
     artist: 'Eminem',
     source: 'Interview, 2017',
-    url: 'https://www.interviewmagazine.com/music/eminem-elton-john-december-2017-interview',
   },
   {
     words: 'I’ve always had an imagination and I listen to a lot of different writers.',
     artist: 'Missy Elliott',
     source: 'Interview, 1999',
-    url: 'https://www.interviewmagazine.com/music/new-again-missy-elliott',
+  },
+  {
+    words: 'That’s just learning and gathering information and taking things to the next step.',
+    artist: 'Pharrell Williams',
+    source: 'Interview, 2009',
   },
 ] as const;
 
+export function resultMessage(attempts: readonly Attempt[]) {
+  const score = attempts.filter(attempt => attempt.correct).length;
+  if (score === attempts.length) return 'Clean take. Every answer landed.';
+  if (score / attempts.length >= .8) return 'Strong set. Keep that rhythm.';
+  if (score / attempts.length >= .5) return 'Good work. Give the misses another spin.';
+  return 'Rough take. The next one starts here.';
+}
+
 export function sessionQuote(sessions: readonly Session[], sessionId: string) {
-  const qualifying = sessions.filter(session => session.mode === 'Daily Practice' &&
+  const qualifying = sessions.filter(session => (session.mode === 'Daily Practice' || session.mode === 'Regional Practice') &&
     session.attempts.length === 10 && session.attempts.filter(attempt => attempt.correct).length >= 8)
     .sort((a, b) => a.attempts[9].at - b.attempts[9].at || a.id.localeCompare(b.id));
   const milestone = qualifying.findIndex(session => session.id === sessionId) + 1;
-  if (milestone > 0 && milestone % 5 === 0) {
-    return artistQuotes[(milestone / 5 - 1) % artistQuotes.length];
+  if (milestone > 0 && (milestone - 1) % 3 === 0) {
+    return artistQuotes[((milestone - 1) / 3) % artistQuotes.length];
   }
 }

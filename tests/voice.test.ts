@@ -27,6 +27,7 @@ test('welcome recognises first practice and seven days since the latest answer',
 test('streak feedback fires at exactly five successive correct answers', () => {
   const five = [true, true, true, true, true];
   assert.deepEqual(notes(five.slice(1)), []);
+  assert.deepEqual(notes(five.slice(2)), ['Three clean hits. Keep the rhythm.']);
   assert.deepEqual(notes([false, ...five]), ["Five in a row. You're locked in."]);
   assert.deepEqual(notes([...five, true]), []);
   assert.deepEqual(notes([true, true, true, false, true, true]), []);
@@ -55,11 +56,13 @@ test('mastery feedback needs the final unmastered fact to reach its third hit', 
   assert.deepEqual(answerNotes([answer(true)], politics, history), []);
 });
 
-test('quotes rotate every fifth qualifying Daily Practice, skipping incomplete and lower-scoring sets', () => {
+test('quotes rotate from the first strong set and every third qualifying set after that', () => {
   const sessions = Array.from({ length: 10 }, (_, index) => session(index + 1));
+  sessions[3].mode = 'Regional Practice';
   sessions.push({ ...session(0), attempts: session(0).attempts.slice(0, 9) }, session(11, 7));
-  assert.equal(sessionQuote(sessions, 'daily-4'), undefined);
-  assert.equal(sessionQuote(sessions, 'daily-5')?.artist, 'Eminem');
-  assert.equal(sessionQuote([...sessions].reverse(), 'daily-10')?.artist, 'Missy Elliott');
+  assert.equal(sessionQuote(sessions, 'daily-1')?.artist, 'Eminem');
+  assert.equal(sessionQuote(sessions, 'daily-2'), undefined);
+  assert.equal(sessionQuote(sessions, 'daily-4')?.artist, 'Missy Elliott');
+  assert.equal(sessionQuote([...sessions].reverse(), 'daily-7')?.artist, 'Pharrell Williams');
   assert.equal(sessionQuote(sessions, 'daily-11'), undefined);
 });

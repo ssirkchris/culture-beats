@@ -3,7 +3,14 @@ export const topics = [
   'Current Affairs', 'History', 'Cinema', 'Music', 'Holidays & Traditions',
 ] as const;
 export type Topic = typeof topics[number];
-export const modes = ['Daily Practice', 'All Topics', 'Weak Spots'] as const;
+export type Country = 'UK' | 'USA';
+export const stages = [
+  { title: 'School stage', topics: ['Politics', 'Food', 'Sports'] },
+  { title: 'Regional stage', topics: ['Geography', 'Literature', 'Science', 'Current Affairs'] },
+  { title: 'Provincial stage', topics: ['History', 'Cinema', 'Music', 'Holidays & Traditions'] },
+] as const satisfies readonly { title: string; topics: readonly Topic[] }[];
+export const regionalTopics: readonly Topic[] = stages[1].topics;
+export const modes = ['Daily Practice', 'Regional Practice', 'All Topics', 'Weak Spots'] as const;
 export type Mode = typeof modes[number];
 export type Variant = {
   id: string;
@@ -14,7 +21,7 @@ export type Variant = {
 export type Fact = {
   id: string;
   topic: Topic;
-  country: 'UK' | 'USA';
+  country: Country;
   difficulty: 'Foundation' | 'Challenge';
   explanation: string;
   source: { title: string; url: string };
@@ -22,9 +29,9 @@ export type Fact = {
   variants: readonly Variant[];
 };
 export type Attempt = { factId: string; variantId: string; correct: boolean; at: number };
-export type Session = { id: string; mode: Mode; topic?: Topic; attempts: Attempt[] };
+export type Session = { id: string; mode: Mode; topic?: Topic; country?: Country; attempts: Attempt[] };
 export type Reminder = { enabled: boolean; time: string };
-export type Progress = { version: 1; sessions: Session[]; reminder: Reminder };
+export type Progress = { version: 1; sessions: Session[]; reminder: Reminder; displayName?: string };
 export const timeZone = 'Europe/Warsaw';
 export const initialProgress: Progress = { version: 1, sessions: [], reminder: { enabled: true, time: '18:00' } };
 
@@ -38,7 +45,10 @@ export function bankErrors(facts: readonly Fact[]): string[] {
         !['Foundation', 'Challenge'].includes(fact.difficulty) ||
         !fact.explanation.trim() || !fact.source.title.trim() ||
         !URL.canParse(fact.source.url) || new URL(fact.source.url).protocol !== 'https:' ||
-        fact.variants.length < 2 || (fact.topic === 'Current Affairs' && !fact.eventDate)) {
+        fact.variants.length < 2 || (fact.topic === 'Current Affairs' && !fact.eventDate) ||
+        (fact.eventDate && (!/^\d{4}-\d{2}-\d{2}$/.test(fact.eventDate) ||
+          !Number.isFinite(Date.parse(fact.eventDate)) ||
+          new Date(fact.eventDate).toISOString().slice(0, 10) !== fact.eventDate))) {
       errors.push(`Invalid fact: ${fact.id}`);
     }
     factIds.add(fact.id);

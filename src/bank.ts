@@ -1,4 +1,8 @@
 import type { Fact } from './model.ts';
+import { geography } from './questions/geography.ts';
+import { literature } from './questions/literature.ts';
+import { science } from './questions/science.ts';
+import { currentAffairs } from './questions/current-affairs.ts';
 
 type Question = [prompt: string, answer: string, distractor1: string, distractor2: string, distractor3: string];
 
@@ -86,4 +90,8 @@ export const bank = [
       ['When is St David’s Day in Wales?', '1 March', '17 March', '23 April', '30 November'],
       ['On what date do Welsh celebrations honour the country’s patron saint, St David?', '1 March', '1 May', '25 January', '31 October'],
     ]),
+  ...geography,
+  ...literature,
+  ...science,
+  ...currentAffairs,
 ] satisfies readonly Fact[];
